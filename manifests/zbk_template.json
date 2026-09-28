@@ -4,7 +4,7 @@
   "minecraft": "26.2",
   "repositories": {
     "datapacks": "656c1ad546e52764124035549ecf30a86a5245ff",
-    "resourcepacks": "e058939a9c1e2adb141c3f31d31bdd02768d11b9",
+    "resourcepacks": "89e510ba2440cae05703339b29a63849ccdfc2ce",
     "structures": "707393cb34dc23287f09377ae7eb4a2f418b7e43"
   },
   "datapacks": ["zombies_build_kit", "zbk_template"],
