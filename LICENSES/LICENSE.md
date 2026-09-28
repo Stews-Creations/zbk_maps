@@ -6,9 +6,9 @@ Copyright (c) 2026 MiniStew (https://www.youtube.com/@MiniStew).
 
 Unless a file carries a separate notice, MiniStew's original code, scripts,
 datapack functions, and build configuration in this repository are licensed
-under [PolyForm Noncommercial 1.0.0](LICENSES/PolyForm-Noncommercial-1.0.0.txt).
+under [PolyForm Noncommercial 1.0.0](PolyForm-Noncommercial-1.0.0.txt).
 MiniStew's original artwork, audio, models, world builds, structure templates, and
-documentation are licensed under [CC BY-NC 4.0](LICENSES/CC-BY-NC-4.0.txt).
+documentation are licensed under [CC BY-NC 4.0](CC-BY-NC-4.0.txt).
 These licenses apply by content type; they are not alternative licenses for
 the same material. Components in separate repositories carry their own copies
 of these terms.

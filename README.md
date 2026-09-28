@@ -28,4 +28,4 @@ We are not currently accepting outside development help or pull/merge requests. 
 
 ## License and credit
 
-Free noncommercial use, modification, and sharing are allowed with credit to [MiniStew](https://www.youtube.com/@MiniStew). Monetized videos and streams are allowed under the [media permission](MEDIA_PERMISSION.md). See [licensing and attribution](LICENSE.md) for the code and asset licenses, their scope, and redistribution requirements. Third-party material retains its own terms.
+Free noncommercial use, modification, and sharing are allowed with credit to [MiniStew](https://www.youtube.com/@MiniStew). Monetized videos and streams are allowed under the [media permission](LICENSES/MEDIA_PERMISSION.md). See [licensing and attribution](LICENSES/LICENSE.md) for the code and asset licenses, their scope, and redistribution requirements. Third-party material retains its own terms.
