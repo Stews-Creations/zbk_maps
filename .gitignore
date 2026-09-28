@@ -1,0 +1,73 @@
+# Local environment and editor settings
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+
+# Local assistant instructions, configuration, and planning
+AGENTS.md
+AGENTS.override.md
+CLAUDE.md
+GEMINI.md
+SKILL.md
+.agents/
+.skills/
+.codex/
+.claude/
+.cursor/
+.cursorrules
+.windsurf/
+.windsurfrules
+.continue/
+.aider*
+.mcp.json
+copilot-instructions.md
+*.instructions.md
+*.prompt.md
+.github/instructions/
+.github/prompts/
+.github/agents/
+.github/skills/
+.devtool/
+.devtools/
+
+# Authoring sources outside the core workspace
+blockbench/
+*.bbmodel
+*.ajblueprint
+*.ajblueprint.*
+
+# Local runtime and deliverables
+/output/
+/releases/
+/server/
+/worlds/
+/world/
+/backups/
+/run/
+logs/
+*.log
+*.tmp
+
+# Dependencies and integration build output
+node_modules/
+__pycache__/
+*.py[cod]
+/build/
+/dist/
+
+# Playable downloads and local Minecraft world data
+*.zip
+*.7z
+*.rar
+*.mca
+*.mcr
+level.dat
+level.dat_old
+session.lock
+playerdata/
+stats/

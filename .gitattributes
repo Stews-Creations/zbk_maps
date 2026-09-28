@@ -1,0 +1,39 @@
+# Normalize source text while preserving binary runtime assets.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=lf
+*.mcfunction text eol=lf
+*.json text eol=lf
+*.mcmeta text eol=lf
+*.md text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.ogg binary
+*.wav binary
+*.mp3 binary
+*.mp4 binary
+*.nbt binary
+*.mca binary
+*.mcr binary
+*.dat binary
+*.jar binary
+*.zip binary
+*.ttf binary
+*.otf binary
+
+# Defense in depth for Git archives; filesystem packagers need their own filters.
+AGENTS.md export-ignore
+AGENTS.override.md export-ignore
+CLAUDE.md export-ignore
+GEMINI.md export-ignore
+SKILL.md export-ignore
+.agents/** export-ignore
+.codex/** export-ignore
+.claude/** export-ignore
+.cursor/** export-ignore
+.mcp.json export-ignore
