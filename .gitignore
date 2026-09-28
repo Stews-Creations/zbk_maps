@@ -60,14 +60,16 @@ __pycache__/
 /build/
 /dist/
 
-# Playable downloads and local Minecraft world data
+# Generated downloads and local Minecraft data
 *.zip
 *.7z
 *.rar
-*.mca
-*.mcr
-level.dat
 level.dat_old
 session.lock
-playerdata/
-stats/
+players/
+datapacks/
+**/generated/minecraft/structure/zombies/
+essential-world-settings.json
+spsSettings.json
+syncmatica/
+mocap_files/

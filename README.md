@@ -1,30 +1,50 @@
 # ZBK Maps
 
-Finished Minecraft Java maps built with [Zombies Build Kit](https://github.com/Stews-Creations/zombies-build-kit), with download links, installation instructions, and compatibility details.
+This repository contains editable Minecraft Java 26.2 worlds. Each world is built with tested revisions of the [ZBK datapacks](https://github.com/Stews-Creations/zbk_datapacks), [resource packs](https://github.com/Stews-Creations/zbk_resourcepacks), and [structures](https://github.com/Stews-Creations/zbk_structures). GitHub Actions creates portable world ZIPs on every push.
 
-No finished maps have been published here yet.
+| World | Datapacks | World resource pack |
+| --- | --- | --- |
+| `Nacht Der Untoten` | Core and Nacht | Core assets with Nacht overrides |
+| `ZBK Template` | Core and template provider | Core assets |
 
-## Download and install
+The matching files and exact component commits are recorded in [manifests/](manifests/). Change a component revision there only after testing the map with it. Both maps currently use one shared revision of each component repository.
 
-Finished world downloads will be available under [Releases](https://github.com/Stews-Creations/zbk_maps/releases). GitHub's **Code > Download ZIP** downloads the repository documentation, not a playable map.
+## Local editing on Windows
 
-1. Choose a map release and check its required Minecraft version, ZBK components, and client mods. Each map's guide will identify what is bundled and what must be installed separately.
-2. Close Minecraft and back up any existing world before extracting the downloaded world folder into your instance's `saves` directory. With the default Windows launcher, this is `%APPDATA%\.minecraft\saves\`. The world's `level.dat` should sit directly inside its world folder.
-3. Follow the map's guide for resource packs, datapacks, structures, and server setup, then open the world using the documented versions.
+Clone the [ZBK workspace](https://github.com/Stews-Creations/zombies-build-kit) with submodules, install Git LFS, and fetch the world region files:
 
-Use the installation guide attached to the selected map version; the latest core components are not automatically compatible with every finished map.
+```powershell
+git -C maps lfs install
+git -C maps lfs pull
+powershell -ExecutionPolicy Bypass -File .\maps\tools\link-local.ps1 -WhatIf
+powershell -ExecutionPolicy Bypass -File .\maps\tools\link-local.ps1
+```
 
-## Repository layout and releases
+Run these from the workspace root while Minecraft is closed. The script refuses to replace an existing save, pack folder, or junction pointing elsewhere. It links each world into `%APPDATA%\.minecraft\saves`, then links the required source datapacks and shared structures inside the world. It also links the source resource packs into `%APPDATA%\.minecraft\resourcepacks` for editing.
 
-Add each finished map's guide and screenshots under `catalog/<map-id>/`, then link its guide from this README. A map guide must identify its release download, Minecraft version, compatible ZBK component versions or commits, required mods, installation steps, credits, and any known limitations.
+Minecraft Java 26.2 loads a world pack from `resourcepacks/resources.zip`. The script builds one merged ZIP per world in ignored `output/local-resourcepacks/` and makes the world's `resourcepacks` directory a junction to that generated folder. Run the script again after changing resource assets or tested revisions. The ZIP is a file; a directory junction named `resources.zip` is not a substitute.
 
-Publish playable world ZIPs as release assets. Keep editable worlds, test servers, backups, player data, and packaged downloads outside Git. Before publishing a world, remove private player/server data and test a fresh installation. Include the applicable license files, attribution, media permission, and third-party notices with each download.
+These save junctions point directly at editable source worlds. Changes made while playing affect the map source. Back up a world before destructive testing, and close Minecraft before rerunning the setup or committing world files. The setup accepts `-MinecraftDirectory` for a different launcher instance.
 
-This repository owns finished-map documentation and distribution. Shared gameplay remains in [zbk_datapacks](https://github.com/Stews-Creations/zbk_datapacks), shared presentation in [zbk_resourcepacks](https://github.com/Stews-Creations/zbk_resourcepacks), and reusable placement templates in [zbk_structures](https://github.com/Stews-Creations/zbk_structures). Map-specific dependencies must be identified in the map guide rather than added to the shared core.
+## Build portable worlds
 
-## Contributions and feedback
+From the workspace root:
 
-We are not currently accepting outside development help or pull/merge requests. Forks and [issues](https://github.com/Stews-Creations/zbk_maps/issues) for bugs, suggestions, and questions are welcome.
+```powershell
+python maps/tools/build_maps.py --maps-root maps --sources-root . --output maps/output/worlds --verify-revisions
+```
+
+Each output ZIP contains a single world folder. The builder copies `level.dat`, the world data and dimensions, the selected datapacks, all shared structure templates, one merged world resource pack, and license/notice files from every included component. Nacht assets override Core assets in its merged pack. The builder does not include player data, session locks, editor settings, local instructions, Git metadata, or junctions. It stops if a required source or tested revision is missing.
+
+[Build map worlds](.github/workflows/build-maps.yml) runs on every push and can also be started manually. It checks out the exact revisions in the manifests, downloads Git LFS world files, validates each ZIP, and uploads both ZIPs as a workflow artifact. Extract the workflow artifact to get the two world ZIPs. A GitHub source download is not a built world.
+
+To install a built world, close Minecraft and extract its world folder into `%APPDATA%\.minecraft\saves` or the saves folder of the chosen launcher instance. Move or rename any existing world of the same name first. The world folder must contain `level.dat` directly. The ZIP includes the required datapacks, structures, and singleplayer resource pack. Optional client mods and Vivecraft overlays remain separate.
+
+## Source files and releases
+
+World regions (`*.mca`) use Git LFS. The repository tracks the editable map state, including `level.dat`, dimension regions, shared world data, and icon files. It ignores player records, locks, backups, generated dependency links, and built ZIPs. Review any new world files before staging; Git ignore rules alone do not protect release archives.
+
+The workflow artifacts are development builds. Test a fresh extracted world in Minecraft before publishing a release. Include the applicable license files, attribution, media permission, and third-party notices; the builder places these under each world's `LICENSES/` directory. A dedicated release workflow can be added after both maps pass installation and gameplay checks.
 
 ## License and credit
 
