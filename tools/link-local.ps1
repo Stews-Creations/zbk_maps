@@ -26,7 +26,6 @@ foreach ($map in $manifests) {
     foreach ($name in $map.datapacks) {
         Add-Link (Join-Path $world "datapacks/$name") (Join-Path $sourcesRoot "datapacks/$name")
     }
-    Add-Link (Join-Path $world 'generated/minecraft/structure/zombies') (Join-Path $sourcesRoot 'structures/zombies')
     if ($WhatIf) {
         $links.Add([pscustomobject]@{ Path = (Join-Path $world 'resourcepacks'); Target = $packOutput })
     } else {
@@ -61,7 +60,7 @@ if ($WhatIf) {
 }
 
 $builder = Join-Path $PSScriptRoot 'build_maps.py'
-& python $builder --maps-root $mapsRoot --sources-root $sourcesRoot --output $localPacks --resourcepacks-only --verify-revisions
+& python $builder --maps-root $mapsRoot --sources-root $sourcesRoot --output $localPacks --resourcepacks-only
 if ($LASTEXITCODE -ne 0) { throw 'World resource pack build failed.' }
 
 foreach ($link in $links) {

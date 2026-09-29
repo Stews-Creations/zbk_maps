@@ -68,7 +68,8 @@ level.dat_old
 session.lock
 players/
 datapacks/
-**/generated/minecraft/structure/zombies/
+**/generated/minecraft/structure/zbk/
+**/dimensions/zombies/
 essential-world-settings.json
 spsSettings.json
 syncmatica/

@@ -32,7 +32,7 @@ jobs:
           revisions = manifests[0]['repositories']
           if any(manifest['repositories'] != revisions for manifest in manifests[1:]):
               raise SystemExit('Map dependency revisions differ')
-          for repository in ('datapacks', 'resourcepacks', 'structures'):
+          for repository in ('datapacks', 'resourcepacks'):
               print(f'{repository}={revisions[repository]}')
           PY
 
@@ -50,23 +50,24 @@ jobs:
           ref: ${{ steps.refs.outputs.resourcepacks }}
           path: resourcepacks
 
-      - name: Check out tested structures
-        uses: actions/checkout@v5
-        with:
-          repository: Stews-Creations/zbk_structures
-          ref: ${{ steps.refs.outputs.structures }}
-          path: structures
-
       - name: Build and inspect portable worlds
         shell: bash
         run: |
           set -euo pipefail
+          python3 -B -m unittest discover -s maps/tools -p check_build_maps.py
           python3 maps/tools/build_maps.py --maps-root maps --sources-root . --output dist --verify-revisions
           sha256sum dist/*.zip
 
-      - name: Upload map ZIPs
-        uses: actions/upload-artifact@v4
+      - name: Upload Nacht Der Untoten ZIP
+        uses: actions/upload-artifact@v7
         with:
-          name: zbk-map-worlds
-          path: dist/*.zip
+          path: dist/nacht_der_untoten.zip
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload ZBK Template ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist/zbk_template.zip
+          archive: false
           if-no-files-found: error

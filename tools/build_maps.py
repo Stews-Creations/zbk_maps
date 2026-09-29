@@ -9,14 +9,15 @@ import shutil
 import stat
 import subprocess
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from zipfile import ZIP_DEFLATED, ZipFile
 
 
 WORLD_ROOTS = ("level.dat", "icon.png", "data", "dimensions", "generated")
 PACK_ROOTS = ("pack.mcmeta", "pack.png", "assets")
+DATAPACK_ROOTS = ("pack.mcmeta", "pack.png", "data")
 LICENSE_FILES = ("LICENSE.md", "NOTICE", "MEDIA_PERMISSION.md")
-REPOSITORIES = ("datapacks", "resourcepacks", "structures")
+REPOSITORIES = {"datapacks": "datapacks", "resourcepacks": "resourcepacks"}
 
 
 def is_link(path: Path) -> bool:
@@ -28,11 +29,14 @@ def is_link(path: Path) -> bool:
 
 
 def copy_safe(source: Path, destination: Path, *, skip_shared_structures: bool = False) -> None:
+    # Core now owns these templates; omit obsolete world installations.
+    # Omit both real directories and junctions at the former installation path.
+    if skip_shared_structures and source.parts[-4:] in (
+        ("generated", "minecraft", "structure", "zbk"),
+        ("generated", "minecraft", "structures", "zbk"),
+    ):
+        return
     if is_link(source):
-        if skip_shared_structures and source.parts[-4:] == (
-            "generated", "minecraft", "structure", "zombies"
-        ):
-            return
         raise ValueError(f"Refusing to package link: {source}")
     if source.is_dir():
         destination.mkdir(parents=True, exist_ok=True)
@@ -85,18 +89,41 @@ def load_manifests(maps_root: Path) -> list[dict]:
             for name in manifest[group]:
                 if Path(name).name != name or name in (".", ".."):
                     raise ValueError(f"Invalid {group} name: {name!r}")
+        for name in manifest.get("required_world_files", []):
+            relative = PurePosixPath(name)
+            if relative.is_absolute() or Path(name).is_absolute() or relative.as_posix() != name or any(part in ("", ".", "..") for part in relative.parts):
+                raise ValueError(f"Invalid required world file: {name!r}")
     return manifests
 
 
 def verify_revisions(manifest: dict, sources_root: Path) -> None:
     for repository in REPOSITORIES:
-        source = checked_child(sources_root, repository)
+        source = checked_child(sources_root, REPOSITORIES[repository])
         actual = subprocess.check_output(
             ["git", "-C", str(source), "rev-parse", "HEAD"], text=True
         ).strip()
         expected = manifest["repositories"][repository]
         if actual != expected:
             raise ValueError(f"{repository} is at {actual}; {manifest['id']} requires {expected}")
+        # Check precisely the component inputs copied into the world, including
+        # ignored files: filesystem packaging does not obey Git ignore rules.
+        roots = DATAPACK_ROOTS if repository == "datapacks" else PACK_ROOTS
+        inputs = [
+            f"{pack}/{root}"
+            for pack in manifest[repository]
+            for root in (*roots, "LICENSES")
+        ]
+        changes = subprocess.check_output(
+            ["git", "-C", str(source), "status", "--porcelain=v1",
+             "--untracked-files=all", "--ignored=matching", "--", *inputs],
+            text=True,
+        ).strip()
+        if changes:
+            raise ValueError(
+                f"{repository} has unpublished runtime inputs for {manifest['id']}:\n"
+                f"{changes}\nUse clean inputs at the pinned revision for a verified build; "
+                "omit --verify-revisions only for a local development build."
+            )
 
 
 def copy_licenses(source: Path, destination: Path) -> None:
@@ -151,25 +178,20 @@ def build_world(manifest: dict, maps_root: Path, sources_root: Path, output: Pat
                     raise ValueError(f"Missing level.dat: {source_world}")
                 continue
             copy_safe(source, stage / name, skip_shared_structures=name == "generated")
+        for name in manifest.get("required_world_files", []):
+            if not (stage / name).is_file():
+                raise ValueError(f"Missing required world file: {source_world / name}")
 
         for name in manifest["datapacks"]:
             pack = checked_child(sources_root / "datapacks", name)
             if not (pack / "pack.mcmeta").is_file():
                 raise ValueError(f"Missing datapack metadata: {pack}")
             destination = stage / "datapacks" / name
-            for runtime_name in ("pack.mcmeta", "pack.png", "data"):
+            for runtime_name in DATAPACK_ROOTS:
                 source = pack / runtime_name
                 if source.exists():
                     copy_safe(source, destination / runtime_name)
             copy_licenses(pack, stage / "LICENSES" / "datapacks" / name)
-
-        structures = checked_child(sources_root, "structures")
-        templates = checked_child(structures, "zombies")
-        destination = stage / "generated" / "minecraft" / "structure" / "zombies"
-        if destination.exists():
-            raise ValueError(f"Map contains a real shared-structure directory: {destination}")
-        copy_safe(templates, destination)
-        copy_licenses(structures, stage / "LICENSES" / "structures")
 
         for name in manifest["resourcepacks"]:
             pack = checked_child(sources_root / "resourcepacks", name)
@@ -194,13 +216,19 @@ def verify_archive(path: Path, manifest: dict) -> None:
         required = {
             root + "level.dat",
             root + "resourcepacks/resources.zip",
-            root + "generated/minecraft/structure/zombies/barrier.nbt",
+            root + "datapacks/zombies_build_kit/data/zbk/structure/barriers/barrier.nbt",
+            root + "datapacks/zombies_build_kit/data/zbk/structure/pack_a_punch/pack_a_punch.nbt",
             root + "LICENSES/maps/LICENSE.md",
-            root + "LICENSES/structures/NOTICE",
+            root + "LICENSES/datapacks/zombies_build_kit/NOTICE",
         }
         required.update(root + f"datapacks/{name}/pack.mcmeta" for name in manifest["datapacks"])
+        required.update(root + name for name in manifest.get("required_world_files", []))
         if missing := required - names:
             raise ValueError(f"Missing archive entries: {sorted(missing)}")
+        legacy = (root + "generated/minecraft/structure/zbk/",
+                  root + "generated/minecraft/structures/zbk/")
+        if any(name.startswith(legacy) for name in names):
+            raise ValueError("Obsolete world-installed Core templates remain in the archive")
         forbidden = ("AGENTS.md", "/.codex/", "/players/", "session.lock", "level.dat_old")
         if leaked := [name for name in names if any(part in name for part in forbidden)]:
             raise ValueError(f"Local-only archive entries: {leaked[:5]}")
