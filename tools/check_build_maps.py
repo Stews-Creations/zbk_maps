@@ -1,11 +1,13 @@
 """Regression checks for pinned component inputs; uses disposable local Git repos."""
 
+import io
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from zipfile import ZipFile
 
-from build_maps import REPOSITORIES, verify_revisions, copy_safe
+from build_maps import REPOSITORIES, verify_revisions, copy_safe, verify_archive
 
 
 class RevisionVerificationTests(unittest.TestCase):
@@ -117,6 +119,32 @@ class RevisionVerificationTests(unittest.TestCase):
         self.assertFalse((destination / "minecraft/structures/zbk").exists())
         self.assertEqual((destination / "custom/structure/room.nbt").read_bytes(),
                          b"map-owned template")
+
+
+    def archive(self, *extra):
+        pack = io.BytesIO()
+        with ZipFile(pack, "w") as resourcepack:
+            resourcepack.writestr("pack.mcmeta", "{}")
+            resourcepack.writestr("assets/zbk/test.json", "{}")
+        path = self.root / "world.zip"
+        with ZipFile(path, "w") as archive:
+            archive.writestr("World/resourcepacks/resources.zip", pack.getvalue())
+            for name in ("level.dat", "LICENSES/maps/LICENSE.md",
+                         "LICENSES/datapacks/zombies_build_kit/NOTICE",
+                         "datapacks/zombies_build_kit/pack.mcmeta",
+                         "datapacks/zombies_build_kit/data/zbk/structure/barriers/barrier.nbt",
+                         "datapacks/zombies_build_kit/data/zbk/structure/pack_a_punch/pack_a_punch.nbt",
+                         *extra):
+                archive.writestr("World/" + name, "{}")
+        return path
+
+    def test_datapack_players_folder_allowed_world_players_rejected(self):
+        manifest = {"world": "World", "datapacks": ["zombies_build_kit"]}
+        verify_archive(self.archive(
+            "datapacks/zombies_build_kit/data/zbk/function/game/spawn_points/players/assign.mcfunction"),
+            manifest)
+        with self.assertRaisesRegex(ValueError, "Local-only archive entries"):
+            verify_archive(self.archive("players/data/player.dat"), manifest)
 
 
 if __name__ == "__main__":

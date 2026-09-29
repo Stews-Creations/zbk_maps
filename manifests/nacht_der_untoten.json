@@ -3,8 +3,8 @@
   "world": "Nacht Der Untoten",
   "minecraft": "26.2",
   "repositories": {
-    "datapacks": "656c1ad546e52764124035549ecf30a86a5245ff",
-    "resourcepacks": "89e510ba2440cae05703339b29a63849ccdfc2ce"
+    "datapacks": "e2ff0905df0deaeaff44eb5724551de09534a304",
+    "resourcepacks": "4dec9bb9c856f1172fa02c4de251cc602c22a274"
   },
   "datapacks": ["zombies_build_kit", "zbk_nacht_der_untoten"],
   "resourcepacks": ["zombies_build_kit", "zbk_nacht_der_untoten"],

@@ -229,8 +229,10 @@ def verify_archive(path: Path, manifest: dict) -> None:
                   root + "generated/minecraft/structures/zbk/")
         if any(name.startswith(legacy) for name in names):
             raise ValueError("Obsolete world-installed Core templates remain in the archive")
-        forbidden = ("AGENTS.md", "/.codex/", "/players/", "session.lock", "level.dat_old")
-        if leaked := [name for name in names if any(part in name for part in forbidden)]:
+        # Player records live at the world root; datapacks may own folders named players.
+        forbidden = ("AGENTS.md", "/.codex/", "session.lock", "level.dat_old")
+        if leaked := [name for name in names
+                      if name.startswith(root + "players/") or any(part in name for part in forbidden)]:
             raise ValueError(f"Local-only archive entries: {leaked[:5]}")
         with ZipFile(archive.open(root + "resourcepacks/resources.zip")) as resourcepack:
             pack_names = set(resourcepack.namelist())
