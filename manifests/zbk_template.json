@@ -1,0 +1,11 @@
+{
+  "id": "zbk_template",
+  "world": "ZBK Template",
+  "minecraft": "26.2",
+  "repositories": {
+    "datapacks": "e2ff0905df0deaeaff44eb5724551de09534a304",
+    "resourcepacks": "4dec9bb9c856f1172fa02c4de251cc602c22a274"
+  },
+  "datapacks": ["zombies_build_kit", "zbk_template"],
+  "resourcepacks": ["zombies_build_kit"]
+}

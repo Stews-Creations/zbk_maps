@@ -1,0 +1,73 @@
+name: Build map worlds
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out maps and world regions
+        uses: actions/checkout@v5
+        with:
+          path: maps
+          lfs: true
+
+      - name: Read tested component revisions
+        id: refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+
+          manifests = [json.loads(path.read_text()) for path in sorted(Path('maps/manifests').glob('*.json'))]
+          if len(manifests) != 2:
+              raise SystemExit('Expected exactly two map manifests')
+          revisions = manifests[0]['repositories']
+          if any(manifest['repositories'] != revisions for manifest in manifests[1:]):
+              raise SystemExit('Map dependency revisions differ')
+          for repository in ('datapacks', 'resourcepacks'):
+              print(f'{repository}={revisions[repository]}')
+          PY
+
+      - name: Check out tested datapacks
+        uses: actions/checkout@v5
+        with:
+          repository: Stews-Creations/zbk_datapacks
+          ref: ${{ steps.refs.outputs.datapacks }}
+          path: datapacks
+
+      - name: Check out tested resource packs
+        uses: actions/checkout@v5
+        with:
+          repository: Stews-Creations/zbk_resourcepacks
+          ref: ${{ steps.refs.outputs.resourcepacks }}
+          path: resourcepacks
+
+      - name: Build and inspect portable worlds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B -m unittest discover -s maps/tools -p check_build_maps.py
+          python3 maps/tools/build_maps.py --maps-root maps --sources-root . --output dist --verify-revisions
+          sha256sum dist/*.zip
+
+      - name: Upload Nacht Der Untoten ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist/nacht_der_untoten.zip
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload ZBK Template ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist/zbk_template.zip
+          archive: false
+          if-no-files-found: error
