@@ -50,7 +50,9 @@ To install a built world, close Minecraft and extract its world folder into `%AP
 
 World regions (`*.mca`) use Git LFS. The repository tracks the editable map state, including `level.dat`, dimension regions, shared world data, and icon files. Nacht's `zbk:door_storage` region contains the saved blocks needed to open and reset its custom doors; keep it with the world. The repository ignores player records, locks, backups, generated dependency links, and built ZIPs. Review any new world files before staging; Git ignore rules alone do not protect release archives.
 
-The workflow artifacts are development builds. Test a fresh extracted world in Minecraft before publishing a release. Include the applicable license files, attribution, media permission, and third-party notices; the builder places these under each world's `LICENSES/` directory. A dedicated release workflow can be added after both maps pass installation and gameplay checks.
+The build workflow artifacts are development builds; the build workflow does not publish releases. Test a fresh extracted world in Minecraft before publishing a release. Include the applicable license files, attribution, media permission, and third-party notices; the builder places these under each world's `LICENSES/` directory.
+
+[Release map worlds](.github/workflows/release-maps.yml) publishes a GitHub release. Start it manually from `main` with a `vMAJOR.MINOR.PATCH` tag. It builds both worlds from the tagged revision, or tags the current `main` revision when the tag is new, with the same revision checks as the build workflow. The release contains `nacht_der_untoten-<tag>.zip`, `zbk_template-<tag>.zip`, and `SHA256SUMS.txt`.
 
 ## License and credit
 
