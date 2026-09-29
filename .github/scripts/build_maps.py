@@ -242,7 +242,7 @@ def verify_archive(path: Path, manifest: dict) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--maps-root", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--maps-root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--sources-root", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--resourcepacks-only", action="store_true")

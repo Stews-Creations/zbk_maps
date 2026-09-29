@@ -54,8 +54,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -B -m unittest discover -s maps/tools -p check_build_maps.py
-          python3 maps/tools/build_maps.py --maps-root maps --sources-root . --output dist --verify-revisions
+          python3 -B -m unittest discover -s maps/.github/scripts -p check_build_maps.py
+          python3 maps/.github/scripts/build_maps.py --maps-root maps --sources-root . --output dist --verify-revisions
           sha256sum dist/*.zip
 
       - name: Upload Nacht Der Untoten ZIP

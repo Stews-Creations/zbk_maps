@@ -12,7 +12,7 @@ from build_maps import REPOSITORIES, verify_revisions, copy_safe, verify_archive
 
 class RevisionVerificationTests(unittest.TestCase):
     def setUp(self):
-        scratch = Path(__file__).resolve().parents[1] / ".codex"
+        scratch = Path(__file__).resolve().parents[2] / ".codex"
         scratch.mkdir(exist_ok=True)
         self.temporary = tempfile.TemporaryDirectory(prefix="build-tests-", dir=scratch)
         self.root = Path(self.temporary.name).resolve()
