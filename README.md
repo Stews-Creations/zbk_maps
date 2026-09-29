@@ -16,15 +16,28 @@ Clone the [ZBK workspace](https://github.com/Stews-Creations/zombies-build-kit) 
 ```powershell
 git -C maps lfs install
 git -C maps lfs pull
-powershell -ExecutionPolicy Bypass -File .\maps\tools\link-local.ps1 -WhatIf
-powershell -ExecutionPolicy Bypass -File .\maps\tools\link-local.ps1
 ```
 
-Run these from the workspace root while Minecraft is closed. The script refuses to replace an existing save, pack folder, or junction pointing elsewhere. It links each world into `%APPDATA%\.minecraft\saves`, then links the required source datapacks inside the world. It also links the source resource packs into `%APPDATA%\.minecraft\resourcepacks` for editing.
+With Minecraft closed, link each world and its sources using directory junctions. Each world's file in [manifests/](manifests/) names its datapacks and resource packs.
 
-Minecraft Java 26.2 loads a world pack from `resourcepacks/resources.zip`. The script builds one merged ZIP per world from the current component checkouts in ignored `output/local-resourcepacks/` and makes the world's `resourcepacks` directory a junction to that generated folder. Run the script again after changing resource assets. The manifests pin revisions for GitHub builds; local editing can use unpublished component changes. The ZIP is a file; a directory junction named `resources.zip` is not a substitute.
+| Junction | Target |
+| --- | --- |
+| `%APPDATA%\.minecraft\saves\<world>` | `maps\<world>` |
+| `maps\<world>\datapacks\<datapack>` | `datapacks\<datapack>` |
+| `%APPDATA%\.minecraft\resourcepacks\<resource pack>` | `resourcepacks\<resource pack>` |
+| `maps\<world>\resourcepacks` | `maps\output\local-resourcepacks\<map id>` |
 
-These save junctions point directly at editable source worlds. Changes made while playing affect the map source. Back up a world before destructive testing, and close Minecraft before rerunning the setup or committing world files. The setup accepts `-MinecraftDirectory` for a different launcher instance.
+Create a junction with `New-Item -ItemType Junction -Path <junction> -Target <target>`. Never replace an existing save, pack folder, or junction that points elsewhere. Use the saves and resource pack folders of another launcher instance in place of `%APPDATA%\.minecraft` when needed.
+
+Minecraft Java 26.2 loads a world pack from `resourcepacks/resources.zip`. Build one merged ZIP per world from the current component checkouts, from the workspace root:
+
+```powershell
+python maps/.github/scripts/build_maps.py --maps-root maps --sources-root . --output maps/output/local-resourcepacks --resourcepacks-only
+```
+
+This writes `resources.zip` for each world into the ignored `output/local-resourcepacks/<map id>/` folder that the world's `resourcepacks` junction points to. Run it again after changing resource assets. The manifests pin revisions for GitHub builds; local editing can use unpublished component changes. The ZIP is a file; a directory junction named `resources.zip` is not a substitute.
+
+These save junctions point directly at editable source worlds. Changes made while playing affect the map source. Back up a world before destructive testing, and close Minecraft before changing the links or committing world files.
 
 When upgrading an existing checkout, remove the old `generated/minecraft/structure/zbk` junction inside each world while Minecraft is closed. Back up any real directory at that location before removing it, and check the older plural `structures` path too. The base pack now supplies those templates. The builder excludes these legacy shared-template paths while preserving unrelated map structures.
 
@@ -33,7 +46,7 @@ When upgrading an existing checkout, remove the old `generated/minecraft/structu
 From the workspace root:
 
 ```powershell
-python maps/tools/build_maps.py --maps-root maps --sources-root . --output maps/output/worlds --verify-revisions
+python maps/.github/scripts/build_maps.py --maps-root maps --sources-root . --output maps/output/worlds --verify-revisions
 ```
 
 Each output ZIP contains a single world folder. The builder copies `level.dat`, the world data and dimensions, the selected datapacks with bundled shared templates, one merged world resource pack, and license/notice files from every included component. Nacht assets override the base pack assets in its merged pack. The builder does not include player data, session locks, editor settings, local instructions, Git metadata, or junctions. It stops if a required source or tested revision is missing.
@@ -42,7 +55,7 @@ Each output ZIP contains a single world folder. The builder copies `level.dat`, 
 
 `--verify-revisions` requires the exact component commits in the manifests and clean runtime inputs in those components. It rejects staged, unstaged, untracked, and ignored files that would change the selected packs or included licenses. Changes outside those inputs, such as component documentation and local build output, do not block verification. The editable world state is copied as it stands; this option verifies component dependencies, not whether world edits are committed. Omit the option only when intentionally building with local development dependencies. Close Minecraft and stop editing inputs while building.
 
-Run the dependency-verification regression checks from the workspace root with `python -B -m unittest discover -s maps/tools -p check_build_maps.py`. They use disposable repositories under the maps checkout's ignored `.codex/` directory and also run in the build workflow.
+Run the dependency-verification regression checks from the workspace root with `python -B -m unittest discover -s maps/.github/scripts -p check_build_maps.py`. They use disposable repositories under the maps checkout's ignored `.codex/` directory and also run in the build workflow.
 
 To install a built world, close Minecraft and extract its world folder into `%APPDATA%\.minecraft\saves` or the saves folder of the chosen launcher instance. Move or rename any existing world of the same name first. The world folder must contain `level.dat` directly. The ZIP includes the required datapacks with bundled structures and the singleplayer resource pack. Optional client mods and Vivecraft overlays remain separate.
 

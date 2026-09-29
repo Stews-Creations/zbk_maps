@@ -43,6 +43,7 @@ blockbench/
 
 # Local runtime and deliverables
 /output/
+/tools/
 /releases/
 /server/
 /worlds/
