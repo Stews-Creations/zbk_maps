@@ -4,7 +4,7 @@
   "minecraft": "26.2",
   "repositories": {
     "datapacks": "e2ff0905df0deaeaff44eb5724551de09534a304",
-    "resourcepacks": "7af21bfd97937f0dc7d4922f4cedfea4cb66a6fb"
+    "resourcepacks": "486b25d47ef6ebb6330509f855501a272e6e3b2e"
   },
   "datapacks": ["zombies_build_kit", "zbk_nacht_der_untoten"],
   "resourcepacks": ["zombies_build_kit", "zbk_nacht_der_untoten"],
