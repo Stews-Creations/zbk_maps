@@ -1,13 +1,14 @@
 """Regression checks for pinned component inputs; uses disposable local Git repos."""
 
 import io
+import json
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 from zipfile import ZipFile
 
-from build_maps import REPOSITORIES, verify_revisions, copy_safe, verify_archive
+from build_maps import REPOSITORIES, verify_revisions, copy_safe, verify_archive, write_resourcepack
 
 
 class RevisionVerificationTests(unittest.TestCase):
@@ -121,10 +122,10 @@ class RevisionVerificationTests(unittest.TestCase):
                          b"map-owned template")
 
 
-    def archive(self, *extra):
+    def archive(self, *extra, metadata="{}"):
         pack = io.BytesIO()
         with ZipFile(pack, "w") as resourcepack:
-            resourcepack.writestr("pack.mcmeta", "{}")
+            resourcepack.writestr("pack.mcmeta", metadata)
             resourcepack.writestr("assets/zbk/test.json", "{}")
         path = self.root / "world.zip"
         with ZipFile(path, "w") as archive:
@@ -145,6 +146,19 @@ class RevisionVerificationTests(unittest.TestCase):
             manifest)
         with self.assertRaisesRegex(ValueError, "Local-only archive entries"):
             verify_archive(self.archive("players/data/player.dat"), manifest)
+
+    def test_bundled_pack_version_is_stamped(self):
+        metadata = self.root / "resourcepacks/core/pack.mcmeta"
+        metadata.write_text('{"pack": {"description": "Core v${version}"}, "zbk": {"version": "${version}"}}\n')
+        destination = self.root / "stage/resources.zip"
+        write_resourcepack(self.manifest, self.root, destination, version="1.2.3")
+        with ZipFile(destination) as archive:
+            stamped = json.loads(archive.read("pack.mcmeta"))
+        self.assertEqual(stamped["zbk"]["version"], "1.2.3")
+        self.assertEqual(stamped["pack"]["description"], "Core v1.2.3")
+        manifest = {"world": "World", "datapacks": ["zombies_build_kit"]}
+        with self.assertRaisesRegex(ValueError, "not stamped"):
+            verify_archive(self.archive(metadata='{"zbk": {"version": "${version}"}}'), manifest)
 
 
 if __name__ == "__main__":

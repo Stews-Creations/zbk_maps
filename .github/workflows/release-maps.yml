@@ -81,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -B -m unittest discover -s maps/.github/scripts -p check_build_maps.py
-          python3 maps/.github/scripts/build_maps.py --maps-root maps --sources-root . --output dist --verify-revisions
+          python3 maps/.github/scripts/build_maps.py --maps-root maps --sources-root . --output dist --verify-revisions --version "${RELEASE_TAG#v}"
           for map in nacht_der_untoten zbk_template; do
             mv "dist/$map.zip" "dist/$map-$RELEASE_TAG.zip"
           done

@@ -18,6 +18,8 @@ PACK_ROOTS = ("pack.mcmeta", "pack.png", "assets")
 DATAPACK_ROOTS = ("pack.mcmeta", "pack.png", "data")
 LICENSE_FILES = ("LICENSE.md", "NOTICE", "MEDIA_PERMISSION.md")
 REPOSITORIES = {"datapacks": "datapacks", "resourcepacks": "resourcepacks"}
+VERSION_PLACEHOLDER = "${version}"
+DEV_VERSION = "0.0.0-dev"
 
 
 def is_link(path: Path) -> bool:
@@ -136,7 +138,14 @@ def copy_licenses(source: Path, destination: Path) -> None:
     copy_safe(license_root, destination)
 
 
-def write_resourcepack(manifest: dict, sources_root: Path, destination: Path) -> None:
+def stamped_metadata(path: Path, version: str) -> str:
+    """Return pack.mcmeta text with the component's ${version} placeholder filled in."""
+    text = path.read_text(encoding="utf-8").replace(VERSION_PLACEHOLDER, version)
+    json.loads(text)
+    return text
+
+
+def write_resourcepack(manifest: dict, sources_root: Path, destination: Path, version: str = DEV_VERSION) -> None:
     entries: dict[str, Path] = {}
     for name in manifest["resourcepacks"]:
         pack = checked_child(sources_root / "resourcepacks", name)
@@ -161,13 +170,16 @@ def write_resourcepack(manifest: dict, sources_root: Path, destination: Path) ->
     try:
         with ZipFile(temporary, "w", ZIP_DEFLATED, compresslevel=6) as archive:
             for name, path in sorted(entries.items()):
-                archive.write(path, name)
+                if name == "pack.mcmeta":
+                    archive.writestr(name, stamped_metadata(path, version))
+                else:
+                    archive.write(path, name)
         os.replace(temporary, destination)
     finally:
         temporary.unlink(missing_ok=True)
 
 
-def build_world(manifest: dict, maps_root: Path, sources_root: Path, output: Path) -> Path:
+def build_world(manifest: dict, maps_root: Path, sources_root: Path, output: Path, version: str = DEV_VERSION) -> Path:
     with tempfile.TemporaryDirectory(prefix="zbk-map-") as temp:
         stage = Path(temp) / manifest["world"]
         source_world = checked_child(maps_root, manifest["world"])
@@ -191,13 +203,16 @@ def build_world(manifest: dict, maps_root: Path, sources_root: Path, output: Pat
                 source = pack / runtime_name
                 if source.exists():
                     copy_safe(source, destination / runtime_name)
+            (destination / "pack.mcmeta").write_bytes(
+                stamped_metadata(pack / "pack.mcmeta", version).encode("utf-8")
+            )
             copy_licenses(pack, stage / "LICENSES" / "datapacks" / name)
 
         for name in manifest["resourcepacks"]:
             pack = checked_child(sources_root / "resourcepacks", name)
             copy_licenses(pack, stage / "LICENSES" / "resourcepacks" / name)
         copy_licenses(maps_root, stage / "LICENSES" / "maps")
-        write_resourcepack(manifest, sources_root, stage / "resourcepacks" / "resources.zip")
+        write_resourcepack(manifest, sources_root, stage / "resourcepacks" / "resources.zip", version)
 
         output.mkdir(parents=True, exist_ok=True)
         archive_path = output / f"{manifest['id']}.zip"
@@ -234,10 +249,15 @@ def verify_archive(path: Path, manifest: dict) -> None:
         if leaked := [name for name in names
                       if name.startswith(root + "players/") or any(part in name for part in forbidden)]:
             raise ValueError(f"Local-only archive entries: {leaked[:5]}")
+        for name in manifest["datapacks"]:
+            if VERSION_PLACEHOLDER in archive.read(root + f"datapacks/{name}/pack.mcmeta").decode("utf-8"):
+                raise ValueError(f"Datapack {name} version was not stamped")
         with ZipFile(archive.open(root + "resourcepacks/resources.zip")) as resourcepack:
             pack_names = set(resourcepack.namelist())
             if "pack.mcmeta" not in pack_names or not any(name.startswith("assets/") for name in pack_names):
                 raise ValueError("World resource pack is missing metadata or assets")
+            if VERSION_PLACEHOLDER in resourcepack.read("pack.mcmeta").decode("utf-8"):
+                raise ValueError("World resource pack version was not stamped")
 
 
 def main() -> None:
@@ -247,6 +267,8 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--resourcepacks-only", action="store_true")
     parser.add_argument("--verify-revisions", action="store_true")
+    parser.add_argument("--version", default=DEV_VERSION,
+                        help="Version stamped into bundled pack.mcmeta files; the release tag without its v prefix")
     args = parser.parse_args()
     maps_root = args.maps_root.resolve()
     sources_root = (args.sources_root or maps_root.parent).resolve()
@@ -260,12 +282,12 @@ def main() -> None:
                 if args.output is not None
                 else maps_root / manifest["world"] / "resourcepacks" / "resources.zip"
             )
-            write_resourcepack(manifest, sources_root, destination)
+            write_resourcepack(manifest, sources_root, destination, args.version)
             print(destination)
         else:
             if args.output is None:
                 parser.error("--output is required unless --resourcepacks-only is set")
-            print(build_world(manifest, maps_root, sources_root, args.output.resolve()))
+            print(build_world(manifest, maps_root, sources_root, args.output.resolve(), args.version))
 
 
 if __name__ == "__main__":
