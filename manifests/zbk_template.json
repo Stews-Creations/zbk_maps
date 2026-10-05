@@ -3,7 +3,7 @@
   "world": "ZBK Template",
   "minecraft": "26.2",
   "repositories": {
-    "datapacks": "34ccbe59aa8c7a430107cb8a456faff9dea993cc",
+    "datapacks": "e003159b3c2b15bbf24f6f175c1d93fe35592349",
     "resourcepacks": "7640bfa9934320e4d4df5ee426e7dcd9d2c49d83"
   },
   "datapacks": ["zombies_build_kit", "zbk_template"],
